@@ -4,32 +4,38 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.net.Uri
 import android.os.BatteryManager
 import android.os.Bundle
+import android.os.StrictMode
+import android.os.StrictMode.VmPolicy
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.FileProvider
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.cancel
 import java.io.File
+
 
 class MainActivity : AppCompatActivity(), View.OnClickListener {
 
     lateinit var btnStart : Button
     lateinit var btnStop : Button
+    lateinit var btnShare : Button
 
     lateinit var tempTv : TextView
     lateinit var voltTv : TextView
 
     var globalTemp = 0.0
     var globalVoltage = 0.0
-
+    //lateinit var globalfileOut : File
 
 
     private val receiver: BroadcastReceiver = object: BroadcastReceiver() {
@@ -74,12 +80,14 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
         btnStart = findViewById(R.id.btn_start)
         btnStop = findViewById(R.id.btn_stop)
+        btnShare = findViewById((R.id.btn_share))
 
         tempTv = findViewById(R.id.temp_tv)
         voltTv = findViewById(R.id.volt_tv)
 
         btnStart.setOnClickListener(this)
         btnStop.setOnClickListener(this)
+        btnShare.setOnClickListener(this)
 
 
         // initialize a new intent filter instance
@@ -88,16 +96,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         // register the broadcast receiver
         registerReceiver(receiver,filter)
 
-
-        val path = getExternalFilesDir(null)
-        val fileOut = File(path, "MQP_data.csv")
-
-        //delete any file object with path and filename that already exists
-        fileOut.delete()
-
-        // initialize CSV file
-        fileOut.appendText("Seconds Elapsed, Battery Temp, Battery Voltage \n")
-        //csvWriter().writeAll(rows, "MQP_data.csv")
+        //val builder = VmPolicy.Builder()
+        //StrictMode.setVmPolicy(builder.build())
     }
 
     override fun onClick(v: View?) {
@@ -118,9 +118,22 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 //voltTv.text = "Battery Voltage: $bvolt"
                 //println(this.lifecycleScope.isActive)
 
+                // thread-thing that runs concurrently every X seconds (60_000 = 60 sec), see delayValue
                 this.lifecycleScope.launch() {
 
-                    // thread-thing that runs concurrently every X seconds (60_000 = 60 sec), see delayValue
+
+                    val path = getExternalFilesDir(null)
+                    val fileOut = File(path, "MQP_data.csv")
+
+                    //globalfileOut = fileOut
+
+                    //delete any file object with path and filename that already exists
+                    //fileOut.delete()
+
+                    // initialize CSV file
+                    fileOut.appendText("Seconds Elapsed, Battery Temp, Battery Voltage \n")
+
+
                     while(true) {
                         tempTv.text = "Battery Temperature: $globalTemp${0x00B0.toChar()}C"
                         voltTv.text = "Battery Voltage: $globalVoltage V"
@@ -148,6 +161,21 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 //println(this.lifecycleScope.isActive)
                 println("stop recording data")
 
+            }
+            R.id.btn_share ->{
+
+                val sendIntent = Intent(Intent.ACTION_SEND)
+                sendIntent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                sendIntent.putExtra(Intent.EXTRA_STREAM, FileProvider.getUriForFile(this,"${application.packageName}.provider", fileOut))
+                sendIntent.type = "text/csv"
+                startActivity(Intent.createChooser(sendIntent, "SHARE"))
+//                val shareIntent: Intent = Intent().apply {
+//                    action = Intent.ACTION_SEND
+//                    putExtra(Intent.EXTRA_STREAM, Uri.fromFile(fileOut))
+//                    type = "text/csv"
+//                }
+//
+//                startActivity(Intent.createChooser(shareIntent, null))
             }
         }
 
