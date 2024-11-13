@@ -22,6 +22,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
+import java.util.Locale
 
 
 class MainActivity : AppCompatActivity(), View.OnClickListener {
@@ -60,6 +61,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 }
                 // store current voltage as a global variable
                 globalVoltage = voltage.toDouble()
+                // round to 2 decimal places
+                String.format(Locale.ENGLISH ,"%.2f", globalVoltage)
 
                 // show the battery temperate in text view
                 // 0x00B0 is the degree symbol in ASCII !!!
