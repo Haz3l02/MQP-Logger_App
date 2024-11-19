@@ -172,13 +172,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 sendIntent.putExtra(Intent.EXTRA_STREAM, FileProvider.getUriForFile(this,"${application.packageName}.provider", fileOut))
                 sendIntent.type = "text/csv"
                 startActivity(Intent.createChooser(sendIntent, "SHARE"))
-//                val shareIntent: Intent = Intent().apply {
-//                    action = Intent.ACTION_SEND
-//                    putExtra(Intent.EXTRA_STREAM, Uri.fromFile(fileOut))
-//                    type = "text/csv"
-//                }
-//
-//                startActivity(Intent.createChooser(shareIntent, null))
+
             }
         }
 
