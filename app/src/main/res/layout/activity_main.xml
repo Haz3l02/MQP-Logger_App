@@ -42,10 +42,10 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Battery Voltage: "
+        android:text="Recording Status: Off"
         android:layout_margin="5dp"
         android:textSize="24sp"
-        android:id="@+id/volt_tv"
+        android:id="@+id/recordStatusTv"
         android:layout_gravity="center"/>
 
     <Button

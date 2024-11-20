@@ -8,6 +8,7 @@ import android.os.BatteryManager
 import android.os.Build
 import android.os.Bundle
 import android.view.View
+import android.view.WindowManager
 import android.widget.Button
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
@@ -33,10 +34,10 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     lateinit var btnShare : Button
 
     lateinit var tempTv : TextView
-    lateinit var voltTv : TextView
+    lateinit var recordStatusTv : TextView
 
     var globalTemp = 0.0
-    var globalVoltage = 0.0
+    var globalBatLvl = 0.0
     var globalCharging = false
     //lateinit var globalfileOut : File
 
@@ -61,18 +62,24 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                     globalCharging = true
                 }
 
-                var voltage = getIntExtra(
-                    BatteryManager.EXTRA_VOLTAGE, 0
-                ) / 1F
+                var batteryLevel = getIntExtra(
+                    BatteryManager.EXTRA_LEVEL, 0
+                )
 
-                // some devices have voltage in mV, some in Volts, this ensures all are in Volts
-                if(voltage > 1000){
-                    voltage /= 1000F
-                }
-                // store current voltage as a global variable
-                globalVoltage = voltage.toDouble()
-                // round to 2 decimal places
-                String.format(Locale.ENGLISH ,"%.2f", globalVoltage)
+                globalBatLvl = batteryLevel.toDouble()
+
+//                var voltage = getIntExtra(
+//                    BatteryManager.EXTRA_VOLTAGE, 0
+//                ) / 1F
+//
+//                // some devices have voltage in mV, some in Volts, this ensures all are in Volts
+//                if(voltage > 1000){
+//                    voltage /= 1000F
+//                }
+//                // store current voltage as a global variable
+//                globalVoltage = voltage.toDouble()
+//                // round to 2 decimal places
+//                String.format(Locale.ENGLISH ,"%.2f", globalVoltage)
 
                 // show the battery temperate in text view
                 // 0x00B0 is the degree symbol in ASCII !!!
@@ -96,7 +103,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         btnShare = findViewById((R.id.btn_share))
 
         tempTv = findViewById(R.id.temp_tv)
-        voltTv = findViewById(R.id.volt_tv)
+        recordStatusTv = findViewById(R.id.recordStatusTv)
 
         btnStart.setOnClickListener(this)
         btnStop.setOnClickListener(this)
@@ -109,8 +116,9 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         // register the broadcast receiver
         registerReceiver(receiver,filter)
 
-        //val builder = VmPolicy.Builder()
-        //StrictMode.setVmPolicy(builder.build())
+
+
+
     }
 
     //@RequiresApi(Build.VERSION_CODES.O)
@@ -128,9 +136,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 // start logging temp and other metrics
                 println("start recording data")
 
-                //tempTv.text = "Battery Temperature: $btemp C"
-                //voltTv.text = "Battery Voltage: $bvolt"
-                //println(this.lifecycleScope.isActive)
+                window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
                 // thread-thing that runs concurrently every X seconds (60_000 = 60 sec), see delayValue
                 this.lifecycleScope.launch() {
@@ -145,29 +151,25 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                     //fileOut.delete()
 
                     // initialize CSV file
-                    fileOut.appendText("Timestamp, Battery Temp, Battery Voltage, Charging Status \n")
+                    fileOut.appendText("Timestamp, Battery Temp, Charging Status, Battery Level % \n")
 
 
                     while(true) {
-
-                        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
-                        val currentTime = LocalDateTime.now().format(formatter)
-
-
                         tempTv.text = "Battery Temperature: $globalTemp${0x00B0.toChar()}C"
-                        voltTv.text = "Battery Voltage: $currentTime"
+                        recordStatusTv.text = "Recording Status: On"
                         //println(this.isActive)
                         // for keeping track of timing
                         //numIterations++
 
                         //println("recorded temp: $globalTemp")
 
-                        // add a new line of data to CSV
                         //val secondsElapsed = (delayValue * numIterations) / 1000
 
+                        val formatter = DateTimeFormatter.ofPattern("MM-dd HH:mm:ss")
+                        val currentTime = LocalDateTime.now().format(formatter)
 
-                        
-                        val data = "$currentTime, $globalTemp, $globalVoltage, $globalCharging \n"
+                        // add a new line of data to CSV
+                        val data = "$currentTime, $globalTemp, $globalCharging, $globalBatLvl% \n"
 
                         fileOut.appendText(data)
 
@@ -183,6 +185,10 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 //println(this.lifecycleScope.isActive)
                 println("stop recording data")
 
+                recordStatusTv.text = "Recording Status: Off"
+
+
+                window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
             }
             R.id.btn_share ->{
 
