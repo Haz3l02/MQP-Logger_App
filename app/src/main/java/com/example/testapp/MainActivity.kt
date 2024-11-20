@@ -149,8 +149,13 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
 
                     while(true) {
+
+                        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+                        val currentTime = LocalDateTime.now().format(formatter)
+
+
                         tempTv.text = "Battery Temperature: $globalTemp${0x00B0.toChar()}C"
-                        voltTv.text = "Battery Voltage: $globalVoltage V"
+                        voltTv.text = "Battery Voltage: $currentTime"
                         //println(this.isActive)
                         // for keeping track of timing
                         //numIterations++
@@ -160,8 +165,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                         // add a new line of data to CSV
                         //val secondsElapsed = (delayValue * numIterations) / 1000
 
-                        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
-                        val currentTime = LocalDateTime.now().format(formatter)
+
                         
                         val data = "$currentTime, $globalTemp, $globalVoltage, $globalCharging \n"
 
