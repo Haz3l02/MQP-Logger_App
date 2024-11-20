@@ -4,15 +4,14 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.net.Uri
 import android.os.BatteryManager
+import android.os.Build
 import android.os.Bundle
-import android.os.StrictMode
-import android.os.StrictMode.VmPolicy
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
 import androidx.core.view.ViewCompat
@@ -22,6 +21,8 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 
@@ -36,6 +37,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
     var globalTemp = 0.0
     var globalVoltage = 0.0
+    var globalCharging = false
     //lateinit var globalfileOut : File
 
 
@@ -50,6 +52,14 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
                 // store current temp value for use in other parts of the program
                 globalTemp = temp.toDouble()
+
+                var charging = getIntExtra(
+                    BatteryManager.EXTRA_PLUGGED, 0
+                )
+
+                if(charging != 0){
+                    globalCharging = true
+                }
 
                 var voltage = getIntExtra(
                     BatteryManager.EXTRA_VOLTAGE, 0
@@ -103,6 +113,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         //StrictMode.setVmPolicy(builder.build())
     }
 
+    //@RequiresApi(Build.VERSION_CODES.O)
     override fun onClick(v: View?) {
         // note: seconds = value/1000 -- so 10_000 --> 10 sec
         val delayValue = 10_000.toLong()
@@ -134,7 +145,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                     //fileOut.delete()
 
                     // initialize CSV file
-                    fileOut.appendText("Seconds Elapsed, Battery Temp, Battery Voltage \n")
+                    fileOut.appendText("Timestamp, Battery Temp, Battery Voltage, Charging Status \n")
 
 
                     while(true) {
@@ -148,7 +159,11 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
                         // add a new line of data to CSV
                         val secondsElapsed = (delayValue * numIterations) / 1000
-                        val data = "$secondsElapsed, $globalTemp, $globalVoltage \n"
+
+                        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+                        val currentTime = LocalDateTime.now().format(formatter)
+                        
+                        val data = "$currentTime, $globalTemp, $globalVoltage, $globalCharging \n"
 
                         fileOut.appendText(data)
 
