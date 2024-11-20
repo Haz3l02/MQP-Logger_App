@@ -117,7 +117,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     override fun onClick(v: View?) {
         // note: seconds = value/1000 -- so 10_000 --> 10 sec
         val delayValue = 10_000.toLong()
-        var numIterations = 0
+        //var numIterations = 0
 
         val path = getExternalFilesDir(null)
         val fileOut = File(path, "MQP_data.csv")
@@ -153,12 +153,12 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                         voltTv.text = "Battery Voltage: $globalVoltage V"
                         //println(this.isActive)
                         // for keeping track of timing
-                        numIterations++
+                        //numIterations++
 
                         //println("recorded temp: $globalTemp")
 
                         // add a new line of data to CSV
-                        val secondsElapsed = (delayValue * numIterations) / 1000
+                        //val secondsElapsed = (delayValue * numIterations) / 1000
 
                         val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
                         val currentTime = LocalDateTime.now().format(formatter)
