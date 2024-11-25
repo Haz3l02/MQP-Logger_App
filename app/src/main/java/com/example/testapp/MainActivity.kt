@@ -4,6 +4,10 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.os.BatteryManager
 import android.os.Build
 import android.os.Bundle
@@ -20,6 +24,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.File
 import java.time.LocalDateTime
@@ -36,10 +41,18 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     lateinit var tempTv : TextView
     lateinit var recordStatusTv : TextView
 
+    // variables used to put data into the csv
     var globalTemp = 0.0
     var globalBatLvl = 0.0
     var globalCharging = false
-    //lateinit var globalfileOut : File
+    var globalProxSensor = "n/a"
+
+
+    var globalRecordingStarted = false
+
+    // Proximity sensor stuff:
+    lateinit var proximitySensor: Sensor
+    lateinit var sensorManager: SensorManager
 
 
     private val receiver: BroadcastReceiver = object: BroadcastReceiver() {
@@ -116,12 +129,53 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         // register the broadcast receiver
         registerReceiver(receiver,filter)
 
+        // on below line we are initializing our sensor manager
+        sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
+
+        // on below line we are initializing our proximity sensor variable
+        proximitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY)!!
+
+        var proximitySensorEventListener: SensorEventListener? = object : SensorEventListener {
+            override fun onSensorChanged(event: SensorEvent) {
+                // check if the sensor type is proximity sensor.
+                if (event.sensor.type == Sensor.TYPE_PROXIMITY) {
+                    if (event.values[0] == 0f) {
+                        // here we are setting our status to our textview..
+                        // if sensor event return 0 then object is closed
+                        // to sensor else object is away from sensor.
+                        //sensorStatusTV.text = "Object is Near to sensor"
+                        globalProxSensor = "Near"
+                    } else {
+                        // on below line we are setting text for text view
+                        // as object is away from sensor.
+                        //sensorStatusTV.text = "Object is Away from sensor"
+                        globalProxSensor = "Far"
+                    }
+                }
+            }
+
+            override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
+                // not used
+            }
+        }
+
+        // unreachable code probably (it will never == null)
+        if (proximitySensor == null){
+            print("No Proximity Sensor found on device!")
+            globalProxSensor = "Error: Sensor not found"
+        }
+        else{
+            sensorManager.registerListener(
+                proximitySensorEventListener,
+                proximitySensor,
+                SensorManager.SENSOR_DELAY_NORMAL
+            )
+        }
 
 
 
     }
 
-    //@RequiresApi(Build.VERSION_CODES.O)
     override fun onClick(v: View?) {
         // note: seconds = value/1000 -- so 10_000 --> 10 sec
         val delayValue = 10_000.toLong()
@@ -136,53 +190,70 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 // start logging temp and other metrics
                 println("start recording data")
 
+                recordStatusTv.text = "Recording Status: On"
+
                 window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
-                // thread-thing that runs concurrently every X seconds (60_000 = 60 sec), see delayValue
-                this.lifecycleScope.launch() {
+                // ONLY run the recording thread if one isn't active already
+                // to prevent duplicate instances of the lifecycle, each recording data separately
+                if(globalRecordingStarted == false) {
+
+                    globalRecordingStarted = true
+
+                    // thread-thing that runs concurrently every X seconds (60_000 = 60 sec), see delayValue
+                    this.lifecycleScope.launch() {
 
 
-                    val path = getExternalFilesDir(null)
-                    val fileOut = File(path, "MQP_data.csv")
 
-                    //globalfileOut = fileOut
+                        val path = getExternalFilesDir(null)
+                        val fileOut = File(path, "MQP_data.csv")
 
-                    //delete any file object with path and filename that already exists
-                    //fileOut.delete()
+                        //globalfileOut = fileOut
 
-                    // initialize CSV file
-                    fileOut.appendText("Timestamp, Battery Temp, Charging Status, Battery Level % \n")
+                        //delete any file object with path and filename that already exists
+                        //fileOut.delete()
+
+                        // initialize CSV file
+                        fileOut.appendText("Timestamp, Battery Temp, Charging Status, Battery Level %, Proximity \n")
 
 
-                    while(true) {
-                        tempTv.text = "Battery Temperature: $globalTemp${0x00B0.toChar()}C"
-                        recordStatusTv.text = "Recording Status: On"
-                        //println(this.isActive)
-                        // for keeping track of timing
-                        //numIterations++
 
-                        //println("recorded temp: $globalTemp")
+                        while (true) {
 
-                        //val secondsElapsed = (delayValue * numIterations) / 1000
+                            if (recordStatusTv.text == "Recording Status: On") {
 
-                        val formatter = DateTimeFormatter.ofPattern("MM-dd HH:mm:ss")
-                        val currentTime = LocalDateTime.now().format(formatter)
 
-                        // add a new line of data to CSV
-                        val data = "$currentTime, $globalTemp, $globalCharging, $globalBatLvl% \n"
+                                tempTv.text = "Battery Temperature: $globalTemp${0x00B0.toChar()}C"
 
-                        fileOut.appendText(data)
+                                //println(this.isActive)
+                                // for keeping track of timing
+                                //numIterations++
 
-                        delay(delayValue)
-                    }
-                }
+                                println("recorded temp: $globalTemp")
+
+                                //val secondsElapsed = (delayValue * numIterations) / 1000
+
+                                val formatter = DateTimeFormatter.ofPattern("MM-dd HH:mm:ss")
+                                val currentTime = LocalDateTime.now().format(formatter)
+
+                                // add a new line of data to CSV
+                                val data =
+                                    "$currentTime, $globalTemp, $globalCharging, $globalBatLvl%, $globalProxSensor \n"
+
+                                fileOut.appendText(data)
+                            }
+
+                            delay(delayValue)
+                        } // while loop
+                    }   // lifecycle launch
+                } // if statement
             }
             R.id.btn_stop ->{
                 // stop logging temp and other metrics
 
                 // cancels the coroutine logging the data (and you can't restart it without closing the app)
-                this.lifecycleScope.cancel()
-                //println(this.lifecycleScope.isActive)
+                //this.lifecycleScope.cancel()
+
                 println("stop recording data")
 
                 recordStatusTv.text = "Recording Status: Off"
