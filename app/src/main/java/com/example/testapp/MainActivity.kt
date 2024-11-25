@@ -46,13 +46,19 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     var globalBatLvl = 0.0
     var globalCharging = false
     var globalProxSensor = "n/a"
+    var globalAccelX = 0.0
+    var globalAccelY = 0.0
+    var globalAccelZ = 0.0
 
 
     var globalRecordingStarted = false
 
     // Proximity sensor stuff:
     lateinit var proximitySensor: Sensor
-    lateinit var sensorManager: SensorManager
+    lateinit var proxSensorManager: SensorManager
+
+    lateinit var accelSensorManager: SensorManager
+    lateinit var accelSensor: Sensor
 
 
     private val receiver: BroadcastReceiver = object: BroadcastReceiver() {
@@ -130,27 +136,54 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         registerReceiver(receiver,filter)
 
         // on below line we are initializing our sensor manager
-        sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        proxSensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
+
+        accelSensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
 
         // on below line we are initializing our proximity sensor variable
-        proximitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY)!!
+        proximitySensor = proxSensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY)!!
+
+        accelSensor = accelSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)!!
+
+
+
 
         var proximitySensorEventListener: SensorEventListener? = object : SensorEventListener {
             override fun onSensorChanged(event: SensorEvent) {
                 // check if the sensor type is proximity sensor.
                 if (event.sensor.type == Sensor.TYPE_PROXIMITY) {
                     if (event.values[0] == 0f) {
-                        // here we are setting our status to our textview..
-                        // if sensor event return 0 then object is closed
-                        // to sensor else object is away from sensor.
-                        //sensorStatusTV.text = "Object is Near to sensor"
+                        // if the sensor event returns 0, then it's close
+                        // some phones have an actual distance value returned here, though
+                        // the only thing we care about is whether it's 0
+
                         globalProxSensor = "Near"
                     } else {
-                        // on below line we are setting text for text view
-                        // as object is away from sensor.
-                        //sensorStatusTV.text = "Object is Away from sensor"
+                        // sensor says object is far from sensor
                         globalProxSensor = "Far"
                     }
+                }
+                else if (event.sensor.type == Sensor.TYPE_ACCELEROMETER){
+
+
+                }
+            }
+
+            override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
+                // not used
+            }
+        }
+
+        var accelSensorEventListener: SensorEventListener? = object : SensorEventListener {
+            override fun onSensorChanged(event: SensorEvent) {
+                // check if the sensor type is proximity sensor.
+                if (event.sensor.type == Sensor.TYPE_ACCELEROMETER) {
+
+                    globalAccelX = event.values[0].toDouble()
+                    globalAccelY = event.values[1].toDouble()
+                    globalAccelZ = event.values[2].toDouble()
+
+
                 }
             }
 
@@ -165,13 +198,18 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             globalProxSensor = "Error: Sensor not found"
         }
         else{
-            sensorManager.registerListener(
+            proxSensorManager.registerListener(
                 proximitySensorEventListener,
                 proximitySensor,
                 SensorManager.SENSOR_DELAY_NORMAL
             )
         }
 
+        accelSensorManager.registerListener(
+            accelSensorEventListener,
+            accelSensor,
+            10000000  // milliseconds btw (== 10 seconds, change to 600... for final version)
+        )
 
 
     }
@@ -214,7 +252,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                         //fileOut.delete()
 
                         // initialize CSV file
-                        fileOut.appendText("Timestamp, Battery Temp, Charging Status, Battery Level %, Proximity \n")
+                        fileOut.appendText(
+                            "Timestamp, Battery Temp, Charging Status, Battery Level %, Proximity, Accel X (m/s^2), Accel Y, Accel Z \n")
 
 
 
@@ -238,7 +277,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
                                 // add a new line of data to CSV
                                 val data =
-                                    "$currentTime, $globalTemp, $globalCharging, $globalBatLvl%, $globalProxSensor \n"
+                                    "$currentTime, $globalTemp, $globalCharging, $globalBatLvl%, $globalProxSensor, " +
+                                            "$globalAccelX, $globalAccelY, $globalAccelZ \n"
 
                                 fileOut.appendText(data)
                             }
