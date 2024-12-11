@@ -1,5 +1,8 @@
 package com.example.testapp
 
+import android.R
+import android.app.PendingIntent
+import android.app.Service
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -9,27 +12,24 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.BatteryManager
-import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.NotificationCompat
+import androidx.core.app.PendingIntentCompat.Flags
 import androidx.core.content.FileProvider
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.File
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 
 class MainActivity : AppCompatActivity(), View.OnClickListener {
@@ -87,22 +87,6 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
                 globalBatLvl = batteryLevel.toDouble()
 
-//                var voltage = getIntExtra(
-//                    BatteryManager.EXTRA_VOLTAGE, 0
-//                ) / 1F
-//
-//                // some devices have voltage in mV, some in Volts, this ensures all are in Volts
-//                if(voltage > 1000){
-//                    voltage /= 1000F
-//                }
-//                // store current voltage as a global variable
-//                globalVoltage = voltage.toDouble()
-//                // round to 2 decimal places
-//                String.format(Locale.ENGLISH ,"%.2f", globalVoltage)
-
-                // show the battery temperate in text view
-                // 0x00B0 is the degree symbol in ASCII !!!
-                //tempTv.text = "Battery Temperature: $temp${0x00B0.toChar()}C"
             }
         }
     }
@@ -314,3 +298,4 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
     }
 }
+
