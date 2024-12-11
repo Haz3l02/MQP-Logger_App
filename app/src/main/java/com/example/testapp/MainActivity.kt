@@ -1,8 +1,5 @@
 package com.example.testapp
 
-import android.R
-import android.app.PendingIntent
-import android.app.Service
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -19,8 +16,6 @@ import android.widget.Button
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.NotificationCompat
-import androidx.core.app.PendingIntentCompat.Flags
 import androidx.core.content.FileProvider
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -195,6 +190,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             10000000  // milliseconds btw (== 10 seconds, change to 600... for final version)
         )
 
+        // start the background recording service
+        startService(Intent(this, DataRecordingService::class.java))
 
     }
 
@@ -298,4 +295,3 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
     }
 }
-

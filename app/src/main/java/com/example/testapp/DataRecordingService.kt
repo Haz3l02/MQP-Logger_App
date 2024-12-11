@@ -15,7 +15,7 @@ class DataRecordingService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         // do your jobs here
 
-
+        print("service started!")
 
 
         startForeground()
@@ -40,7 +40,7 @@ class DataRecordingService : Service() {
                 NOTIF_CHANNEL_ID
             ) // don't forget create a notification channel first
                 .setOngoing(true)
-                .setSmallIcon(R.drawable.star_on)
+                .setSmallIcon(R.drawable.ic_dialog_info)
                 .setContentTitle("MQP Data Logger App")
                 .setContentText("Service is running in the background")
                 .setContentIntent(pendingIntent)
