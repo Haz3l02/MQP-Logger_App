@@ -16,9 +16,6 @@ import androidx.core.app.NotificationManagerCompat
 class DataRecordingService : Service() {
 
 
-    var notificationManager: NotificationManagerCompat? = null
-
-
     override fun onBind(intent: Intent?): IBinder? {
         return null
     }
@@ -45,18 +42,15 @@ class DataRecordingService : Service() {
             notificationIntent, PendingIntent.FLAG_IMMUTABLE
         )
 
-        val CHANNEL_ID = "10"
-        val channel = NotificationChannel(
-            CHANNEL_ID,
-            "MQPAppChannel",
-            NotificationManager.IMPORTANCE_HIGH
-        )
-        channel.description = "MQP App channel for foreground service notification"
+        val name = "MQP App Data Recording"
+        val descriptionText = "Necessary to Record Data with this App"
+        val importance = NotificationManager.IMPORTANCE_LOW
+        val mChannel = NotificationChannel(NOTIF_CHANNEL_ID, name, importance)
+        mChannel.description = descriptionText
 
-        notificationManager = NotificationManagerCompat.from(this);
-
-        notificationManager = getSystemService<NotificationManager>(NotificationManager::class.java)
-        notificationManager.createNotificationChannel(channel)
+        // creates the notification channel
+        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.createNotificationChannel(mChannel)
 
 
 
