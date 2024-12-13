@@ -1,13 +1,24 @@
 package com.example.testapp
 
 import android.R
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+
+
+
 
 class DataRecordingService : Service() {
+
+
+    var notificationManager: NotificationManagerCompat? = null
+
+
     override fun onBind(intent: Intent?): IBinder? {
         return null
     }
@@ -33,6 +44,21 @@ class DataRecordingService : Service() {
             this, 0,
             notificationIntent, PendingIntent.FLAG_IMMUTABLE
         )
+
+        val CHANNEL_ID = "10"
+        val channel = NotificationChannel(
+            CHANNEL_ID,
+            "MQPAppChannel",
+            NotificationManager.IMPORTANCE_HIGH
+        )
+        channel.description = "MQP App channel for foreground service notification"
+
+        notificationManager = NotificationManagerCompat.from(this);
+
+        notificationManager = getSystemService<NotificationManager>(NotificationManager::class.java)
+        notificationManager.createNotificationChannel(channel)
+
+
 
         startForeground(
             NOTIF_ID, NotificationCompat.Builder(
