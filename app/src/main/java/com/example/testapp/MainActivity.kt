@@ -22,6 +22,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.w3c.dom.Text
 import java.io.File
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -54,6 +55,18 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
     lateinit var accelSensorManager: SensorManager
     lateinit var accelSensor: Sensor
+
+    object importantVars{
+        var globalTemp = 0.0
+        var globalBatLvl = 0.0
+        var globalCharging = false
+        var globalProxSensor = "n/a"
+        var globalAccelX = 0.0
+        var globalAccelY = 0.0
+        var globalAccelZ = 0.0
+        var tempTv = null
+        var recordStatusTv = null
+    }
 
 
     private val receiver: BroadcastReceiver = object: BroadcastReceiver() {
@@ -193,6 +206,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         // start the background recording service
         startService(Intent(this, DataRecordingService::class.java))
 
+
     }
 
     override fun onClick(v: View?) {
@@ -223,14 +237,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                     this.lifecycleScope.launch() {
 
 
-
                         val path = getExternalFilesDir(null)
                         val fileOut = File(path, "MQP_data.csv")
-
-                        //globalfileOut = fileOut
-
-                        //delete any file object with path and filename that already exists
-                        //fileOut.delete()
 
                         // initialize CSV file
                         fileOut.appendText(
@@ -242,26 +250,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
                             if (recordStatusTv.text == "Recording Status: On") {
 
+                                importantVars.tempTv = tempTv
 
-                                tempTv.text = "Battery Temperature: $globalTemp${0x00B0.toChar()}C"
-
-                                //println(this.isActive)
-                                // for keeping track of timing
-                                //numIterations++
-
-                                println("recorded temp: $globalTemp")
-
-                                //val secondsElapsed = (delayValue * numIterations) / 1000
-
-                                val formatter = DateTimeFormatter.ofPattern("MM-dd HH:mm:ss")
-                                val currentTime = LocalDateTime.now().format(formatter)
-
-                                // add a new line of data to CSV
-                                val data =
-                                    "$currentTime, $globalTemp, $globalCharging, $globalBatLvl%, $globalProxSensor, " +
-                                            "$globalAccelX, $globalAccelY, $globalAccelZ \n"
-
-                                fileOut.appendText(data)
                             }
 
                             delay(delayValue)
