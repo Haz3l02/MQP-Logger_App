@@ -8,11 +8,22 @@ import android.app.Service
 import android.content.Intent
 import android.os.IBinder
 import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.lifecycleScope
+import com.example.testapp.MainActivity.importantVars.globalAccelX
+import com.example.testapp.MainActivity.importantVars.globalAccelY
+import com.example.testapp.MainActivity.importantVars.globalAccelZ
+import com.example.testapp.MainActivity.importantVars.globalBatLvl
+import com.example.testapp.MainActivity.importantVars.globalCharging
+import com.example.testapp.MainActivity.importantVars.globalProxSensor
+import com.example.testapp.MainActivity.importantVars.globalTemp
+import com.example.testapp.MainActivity.importantVars.recordingNow
+
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.w3c.dom.Text
 import java.io.File
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -33,7 +44,7 @@ class DataRecordingService : Service() {
         val path = getExternalFilesDir(null)
         val fileOut = File(path, "MQP_data.csv")
 
-        //globalfileOut = fileOut
+
 
         //delete any file object with path and filename that already exists
         //fileOut.delete()
@@ -48,11 +59,7 @@ class DataRecordingService : Service() {
 
             while (true) {
 
-                if (recordStatusTv.text == "Recording Status: On") {
-
-
-
-                    tempTv.text = "Battery Temperature: $globalTemp${0x00B0.toChar()}C"
+                if (recordingNow == true) {
 
 
                     println("recorded temp: $globalTemp")

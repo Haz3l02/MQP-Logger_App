@@ -48,6 +48,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
 
     var globalRecordingStarted = false
+    var recordingNow = false
 
     // Proximity sensor stuff:
     lateinit var proximitySensor: Sensor
@@ -64,10 +65,10 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         var globalAccelX = 0.0
         var globalAccelY = 0.0
         var globalAccelZ = 0.0
-        var tempTv = null
-        var recordStatusTv = null
+        //var tempTv = null
+        //var recordStatusTv = null
+        var recordingNow = false
     }
-
 
     private val receiver: BroadcastReceiver = object: BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -80,6 +81,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
                 // store current temp value for use in other parts of the program
                 globalTemp = temp.toDouble()
+                importantVars.globalTemp = globalTemp
 
                 var charging = getIntExtra(
                     BatteryManager.EXTRA_PLUGGED, 0
@@ -87,6 +89,10 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
                 if(charging != 0){
                     globalCharging = true
+                    importantVars.globalCharging = globalCharging
+                }
+                else{
+                    importantVars.globalCharging = false
                 }
 
                 var batteryLevel = getIntExtra(
@@ -94,6 +100,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 )
 
                 globalBatLvl = batteryLevel.toDouble()
+                importantVars.globalBatLvl = globalBatLvl
 
             }
         }
@@ -154,11 +161,12 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                         // sensor says object is far from sensor
                         globalProxSensor = "Far"
                     }
+                    importantVars.globalProxSensor = globalProxSensor
                 }
-                else if (event.sensor.type == Sensor.TYPE_ACCELEROMETER){
-
-
-                }
+//                else if (event.sensor.type == Sensor.TYPE_ACCELEROMETER){
+//
+//
+//                }
             }
 
             override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
@@ -175,6 +183,9 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                     globalAccelY = event.values[1].toDouble()
                     globalAccelZ = event.values[2].toDouble()
 
+                    importantVars.globalAccelX = globalAccelX
+                    importantVars.globalAccelY = globalAccelY
+                    importantVars.globalAccelZ = globalAccelZ
 
                 }
             }
@@ -250,7 +261,11 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
                             if (recordStatusTv.text == "Recording Status: On") {
 
-                                importantVars.tempTv = tempTv
+                                // let the service thread know to start recording data
+                                recordingNow = true
+                                importantVars.recordingNow = true
+
+                                tempTv.text = "Battery Temperature: $globalTemp${0x00B0.toChar()}C"
 
                             }
 
@@ -268,6 +283,9 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 println("stop recording data")
 
                 recordStatusTv.text = "Recording Status: Off"
+
+                recordingNow = false
+                importantVars.recordingNow = false
 
 
                 window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
