@@ -265,6 +265,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                                 recordingNow = true
                                 importantVars.recordingNow = true
 
+                                // update temperature display
                                 tempTv.text = "Battery Temperature: $globalTemp${0x00B0.toChar()}C"
 
                             }
