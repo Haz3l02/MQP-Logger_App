@@ -9,27 +9,23 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.BatteryManager
-import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import org.w3c.dom.Text
 import java.io.File
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 
 class MainActivity : AppCompatActivity(), View.OnClickListener {
@@ -52,6 +48,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
 
     var globalRecordingStarted = false
+    var recordingNow = false
 
     // Proximity sensor stuff:
     lateinit var proximitySensor: Sensor
@@ -60,6 +57,18 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     lateinit var accelSensorManager: SensorManager
     lateinit var accelSensor: Sensor
 
+    object importantVars{
+        var globalTemp = 0.0
+        var globalBatLvl = 0.0
+        var globalCharging = false
+        var globalProxSensor = "n/a"
+        var globalAccelX = 0.0
+        var globalAccelY = 0.0
+        var globalAccelZ = 0.0
+        //var tempTv = null
+        //var recordStatusTv = null
+        var recordingNow = false
+    }
 
     private val receiver: BroadcastReceiver = object: BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -72,6 +81,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
                 // store current temp value for use in other parts of the program
                 globalTemp = temp.toDouble()
+                importantVars.globalTemp = globalTemp
 
                 var charging = getIntExtra(
                     BatteryManager.EXTRA_PLUGGED, 0
@@ -79,6 +89,10 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
                 if(charging != 0){
                     globalCharging = true
+                    importantVars.globalCharging = globalCharging
+                }
+                else{
+                    importantVars.globalCharging = false
                 }
 
                 var batteryLevel = getIntExtra(
@@ -86,23 +100,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 )
 
                 globalBatLvl = batteryLevel.toDouble()
+                importantVars.globalBatLvl = globalBatLvl
 
-//                var voltage = getIntExtra(
-//                    BatteryManager.EXTRA_VOLTAGE, 0
-//                ) / 1F
-//
-//                // some devices have voltage in mV, some in Volts, this ensures all are in Volts
-//                if(voltage > 1000){
-//                    voltage /= 1000F
-//                }
-//                // store current voltage as a global variable
-//                globalVoltage = voltage.toDouble()
-//                // round to 2 decimal places
-//                String.format(Locale.ENGLISH ,"%.2f", globalVoltage)
-
-                // show the battery temperate in text view
-                // 0x00B0 is the degree symbol in ASCII !!!
-                //tempTv.text = "Battery Temperature: $temp${0x00B0.toChar()}C"
             }
         }
     }
@@ -162,11 +161,12 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                         // sensor says object is far from sensor
                         globalProxSensor = "Far"
                     }
+                    importantVars.globalProxSensor = globalProxSensor
                 }
-                else if (event.sensor.type == Sensor.TYPE_ACCELEROMETER){
-
-
-                }
+//                else if (event.sensor.type == Sensor.TYPE_ACCELEROMETER){
+//
+//
+//                }
             }
 
             override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
@@ -183,6 +183,9 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                     globalAccelY = event.values[1].toDouble()
                     globalAccelZ = event.values[2].toDouble()
 
+                    importantVars.globalAccelX = globalAccelX
+                    importantVars.globalAccelY = globalAccelY
+                    importantVars.globalAccelZ = globalAccelZ
 
                 }
             }
@@ -210,6 +213,9 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             accelSensor,
             10000000  // milliseconds btw (== 10 seconds, change to 600... for final version)
         )
+
+        // start the background recording service
+        startService(Intent(this, DataRecordingService::class.java))
 
 
     }
@@ -242,14 +248,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                     this.lifecycleScope.launch() {
 
 
-
                         val path = getExternalFilesDir(null)
                         val fileOut = File(path, "MQP_data.csv")
-
-                        //globalfileOut = fileOut
-
-                        //delete any file object with path and filename that already exists
-                        //fileOut.delete()
 
                         // initialize CSV file
                         fileOut.appendText(
@@ -261,26 +261,13 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
                             if (recordStatusTv.text == "Recording Status: On") {
 
+                                // let the service thread know to start recording data
+                                recordingNow = true
+                                importantVars.recordingNow = true
 
+                                // update temperature display
                                 tempTv.text = "Battery Temperature: $globalTemp${0x00B0.toChar()}C"
 
-                                //println(this.isActive)
-                                // for keeping track of timing
-                                //numIterations++
-
-                                println("recorded temp: $globalTemp")
-
-                                //val secondsElapsed = (delayValue * numIterations) / 1000
-
-                                val formatter = DateTimeFormatter.ofPattern("MM-dd HH:mm:ss")
-                                val currentTime = LocalDateTime.now().format(formatter)
-
-                                // add a new line of data to CSV
-                                val data =
-                                    "$currentTime, $globalTemp, $globalCharging, $globalBatLvl%, $globalProxSensor, " +
-                                            "$globalAccelX, $globalAccelY, $globalAccelZ \n"
-
-                                fileOut.appendText(data)
                             }
 
                             delay(delayValue)
@@ -297,6 +284,9 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 println("stop recording data")
 
                 recordStatusTv.text = "Recording Status: Off"
+
+                recordingNow = false
+                importantVars.recordingNow = false
 
 
                 window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)

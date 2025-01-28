@@ -3,6 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.hardware.sensor.proximity"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
 
     <application
         android:allowBackup="true"
@@ -14,6 +16,12 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.TestApp"
         tools:targetApi="31">
+        <service
+            android:name=".DataRecordingService"
+            android:foregroundServiceType="dataSync"
+            android:exported="false">
+        </service>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.provider"
