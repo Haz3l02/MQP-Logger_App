@@ -49,10 +49,6 @@ class DataRecordingService : Service() {
         //delete any file object with path and filename that already exists
         //fileOut.delete()
 
-        // initialize CSV file
-        fileOut.appendText(
-            "Timestamp, Battery Temp, Charging Status, Battery Level %, Proximity, Accel X (m/s^2), Accel Y, Accel Z \n")
-
 
         Thread {
 
