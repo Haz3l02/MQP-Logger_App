@@ -1,7 +1,9 @@
 package com.example.testapp
 
+import android.app.AlertDialog
 import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.DialogInterface
 import android.content.Intent
 import android.content.IntentFilter
 import android.hardware.Sensor
@@ -22,10 +24,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.w3c.dom.Text
 import java.io.File
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 
 class MainActivity : AppCompatActivity(), View.OnClickListener {
@@ -33,6 +32,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     lateinit var btnStart : Button
     lateinit var btnStop : Button
     lateinit var btnShare : Button
+    lateinit var btnDelete : Button
 
     lateinit var tempTv : TextView
     lateinit var recordStatusTv : TextView
@@ -119,6 +119,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         btnStart = findViewById(R.id.btn_start)
         btnStop = findViewById(R.id.btn_stop)
         btnShare = findViewById((R.id.btn_share))
+        btnDelete = findViewById((R.id.btn_delete))
 
         tempTv = findViewById(R.id.temp_tv)
         recordStatusTv = findViewById(R.id.recordStatusTv)
@@ -126,6 +127,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         btnStart.setOnClickListener(this)
         btnStop.setOnClickListener(this)
         btnShare.setOnClickListener(this)
+        btnDelete.setOnClickListener(this)
 
 
         // initialize a new intent filter instance
@@ -218,6 +220,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         startService(Intent(this, DataRecordingService::class.java))
 
 
+
     }
 
     override fun onClick(v: View?) {
@@ -228,6 +231,13 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         val path = getExternalFilesDir(null)
         val fileOut = File(path, "MQP_data.csv")
 
+        val dialogClickListener =
+            DialogInterface.OnClickListener { dialog, which ->
+                when (which) {
+                    DialogInterface.BUTTON_POSITIVE -> {fileOut.delete()}
+                    DialogInterface.BUTTON_NEGATIVE -> {}
+                }
+            }
 
         when(v?.id){
             R.id.btn_start ->{
@@ -278,9 +288,6 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             R.id.btn_stop ->{
                 // stop logging temp and other metrics
 
-                // cancels the coroutine logging the data (and you can't restart it without closing the app)
-                //this.lifecycleScope.cancel()
-
                 println("stop recording data")
 
                 recordStatusTv.text = "Recording Status: Off"
@@ -298,6 +305,21 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 sendIntent.putExtra(Intent.EXTRA_STREAM, FileProvider.getUriForFile(this,"${application.packageName}.provider", fileOut))
                 sendIntent.type = "text/csv"
                 startActivity(Intent.createChooser(sendIntent, "SHARE"))
+
+            }
+
+            R.id.btn_delete ->{
+
+                println("Delete the current file")
+
+                // send popup "Are you sure" etc etc
+                val builder = AlertDialog.Builder(this)
+                builder.setTitle(title)
+                builder.setIcon(android.R.drawable.ic_dialog_alert)
+
+                builder.setMessage("Are you absolutely sure you want to delete the current data file FOREVER? " +
+                        "This CANNOT BE UNDONE!").setPositiveButton("Yes", dialogClickListener)
+                    .setNegativeButton("No", dialogClickListener).show()
 
             }
         }
